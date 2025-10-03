@@ -10,18 +10,13 @@ on:
         default: 'false'
 
 env:
-  REPO_URL: https://github.com/hanwckf/immortalwrt-mt798x.git  # 仓库 URL
-  REPO_BRANCH: openwrt-21.02  # 分支名称
-  FEEDS_CONF: feeds.conf.default  # 自定义 feeds 配置文件
-  CONFIG_FILE: .config  # 配置文件
-  DIY_P1_SH: before-update-custom.sh  # 自定义脚本 1
-  DIY_P2_SH: after-update-custom.sh  # 自定义脚本 2
-  UPLOAD_BIN_DIR: false  # 是否上传 bin 目录
-  UPLOAD_FIRMWARE: true  # 是否上传固件
-  UPLOAD_COWTRANSFER: false  # 是否上传到 cowtransfer
-  UPLOAD_WETRANSFER: false  # 是否上传到 WeTransfer
-  UPLOAD_RELEASE: false  # 是否发布 release
-  TZ: Asia/Shanghai  # 时区设置
+  REPO_URL: https://github.com/hanwckf/immortalwrt-mt798x.git
+  REPO_BRANCH: openwrt-21.02
+  CONFIG_FILE: .config
+  SELF_BEFORE_SH: before-update-custom.sh
+  SELF_AFTER_SH: after-update-custom.sh
+  TZ: Asia/Shanghai
+  FEEDS_CONF: feeds.conf.default
 
 jobs:
   build:
@@ -99,37 +94,32 @@ jobs:
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
-        sudo -E apt-get -qq update
-        sudo -E apt-get -qq install ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
-        bzip2 ccache clang cmake cpio curl device-tree-compiler flex gawk gcc-multilib g++-multilib gettext \
-        genisoimage git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libfuse-dev libglib2.0-dev \
-        libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev libpython3-dev \
-        libreadline-dev libssl-dev libtool llvm lrzsz msmtp ninja-build p7zip p7zip-full patch pkgconf \
-        python3 python3-pyelftools python3-setuptools qemu-utils rsync scons squashfs-tools subversion \
-        swig texinfo uglifyjs upx-ucl unzip vim wget xmlto xxd zlib1g-dev
+        sudo bash -c 'bash <(curl -sL https://build-scripts.immortalwrt.eu.org/init_build_environment.sh)'
         sudo -E apt-get -qq autoremove --purge
         sudo -E apt-get -qq clean
-        sudo rm -rf /etc/apt/sources.list.d/* /usr/local/lib/android /opt/ghc /usr/share/dotnet /usr/local/graalvm /usr/local/.ghcup \
-        /usr/local/share/powershell /usr/local/share/chromium /usr/local/lib/node_modules
         sudo timedatectl set-timezone "$TZ"
-        sudo chown $USER:$GROUPS $GITHUB_WORKSPACE
+        sudo mkdir -p /srcdir
+        sudo chown $USER:$GROUPS /srcdir
 
     - name: Clone source code
-      working-directory: ./
+      working-directory: /srcdir
       run: |
-        git clone --depth=1 $REPO_URL -b $REPO_BRANCH openwrt
+        echo "Free space:"
+        df -hT $PWD
+        git clone $REPO_URL -b $REPO_BRANCH openwrt
+        ln -sf /srcdir/openwrt $GITHUB_WORKSPACE/openwrt
 
-    - name: Load custom feeds  # 加载自定义 feeds
+    - name: Load custom feeds
       run: |
         [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
-        chmod +x $DIY_P1_SH
+        chmod +x $SELF_BEFORE_SH
         cd openwrt
-        $GITHUB_WORKSPACE/$DIY_P1_SH
+        $GITHUB_WORKSPACE/$SELF_BEFORE_SH
 
-    - name: Update feeds  # 更新 feeds
+    - name: Update feeds
       run: cd openwrt && ./scripts/feeds update -a
 
-    - name: Install feeds  # 安装 feeds
+    - name: Install feeds
       run: cd openwrt && ./scripts/feeds install -a
 
     - name: Install lucky
@@ -144,27 +134,27 @@ jobs:
     #     rm -rf luci-theme-argon
     #     git clone -b master https://github.com/jerrykuku/luci-theme-argon.git luci-theme-argon
 
-    - name: Load custom configuration  # 加载自定义配置
+    - name: Load custom config
       run: |
         [ -e files ] && mv files openwrt/files
         [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
-        chmod +x $DIY_P2_SH
+        chmod +x $SELF_AFTER_SH
         cd openwrt
-        $GITHUB_WORKSPACE/$DIY_P2_SH
+        $GITHUB_WORKSPACE/$SELF_AFTER_SH
 
-    - name: SSH connection to Actions  # 连接到 Actions 的 SSH
-      uses: P3TERX/ssh2actions@v1.0.0
-      if: (github.event.inputs.ssh == 'true' && github.event.inputs.ssh != 'false') || contains(github.event.action, 'ssh')
-      env:
-        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+    # - name: SSH connection to Actions  # 连接到 Actions 的 SSH
+    #   uses: P3TERX/ssh2actions@v1.0.0
+    #   if: (github.event.inputs.ssh == 'true' && github.event.inputs.ssh != 'false') || contains(github.event.action, 'ssh')
+    #   env:
+    #     TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+    #     TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
 
-    - name: Download package  # 下载包
+    - name: Download package
       id: package
       run: |
         cd openwrt
         make defconfig
-        make download -j8
+        make download -j8 V=11
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
 
@@ -198,19 +188,19 @@ jobs:
         body: |
           Hanwckf's ImmortalWrt Firmware For Xiaomi AX3000T Router
 
-    - name: Clean compile
-      id: clean-compile
-      run: |
-        cd openwrt
-        make clean
+    # - name: Clean compile
+    #   id: clean-compile
+    #   run: |
+    #     cd openwrt
+    #     make clean
 
-    - name: Cache compile
-      id: cache-compile
-      uses: actions/cache/save@v4
-      if: steps.compile.outputs.status == 'success' && !cancelled()
-      with:
-        path: openwrt
-        key: ${{ runner.os }}-openwrt-${{ hashFiles('openwrt/feeds.conf.default') }}
+    # - name: Cache compile
+    #   id: cache-compile
+    #   uses: actions/cache/save@v4
+    #   if: steps.compile.outputs.status == 'success' && !cancelled()
+    #   with:
+    #     path: openwrt
+    #     key: ${{ runner.os }}-openwrt-${{ hashFiles('openwrt/feeds.conf.default') }}
 
     
     # - name: Check space usage  # 检查空间使用情况
