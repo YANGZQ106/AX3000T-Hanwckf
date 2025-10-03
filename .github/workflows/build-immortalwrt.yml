@@ -87,6 +87,9 @@ jobs:
         cd openwrt
         rm -rf package/lucky
         git clone https://github.com/gdy666/luci-app-lucky.git package/lucky
+        cp package/lucky/lucky package/
+        cp package/lucky/luci-app-lucky package/
+        
 
     - name: Load custom config
       run: |
