@@ -8,7 +8,7 @@
 
 ## 默认配置  
 
-默认 LAN IP**: `192.168.8.1`  
+默认 LAN IP: `192.168.8.1`  
 
 ## 自定义配置  
 
@@ -17,6 +17,4 @@
 ## License  
 
 This project is licensed under the Apache 2.0 License. Please see the [LICENSE](LICENSE) file for details.
-
-该项目依据 Apache 2.0 许可证进行授权。有关详细信息，请参阅 [LICENSE](LICENSE) 文件。
 
