@@ -110,8 +110,8 @@ jobs:
         # Need Modify https://docs.github.com/zh/actions/writing-workflows/choosing-what-your-workflow-does/workflow-commands-for-github-actions#multiline-strings
         # grep '^CONFIG_TARGET_DEVICE.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
         # [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV
-        echo "DEVICE_NAME=_xiaomi-ax3000t" >>$GITHUB_ENV
-        echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
+        echo "DEVICE_NAME=_Xiaomi-AX3000T" >>$GITHUB_ENV
+        echo "FILE_DATE=_$(date +"%Y%m%d")" >> $GITHUB_ENV
 
     - name: Check space usage
       if: (!cancelled())
@@ -144,9 +144,9 @@ jobs:
       id: tag
       if: steps.compile.outputs.status == 'success' && !cancelled()
       run: |
-        echo "release_tag=ImmortalWrt_$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
+        echo "release_tag=ImmortalWrt_$(date +"%Y.%m.%d")" >> $GITHUB_OUTPUT
         touch release.txt
-        echo "ImmortalWrt 🌝 xiaomi ax3000t" >> release.txt
+        echo "ImmortalWrt For Xiaomi AX3000T" >> release.txt
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Upload firmware to release
