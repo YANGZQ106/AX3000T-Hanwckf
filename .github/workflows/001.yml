@@ -179,42 +179,78 @@ jobs:
         [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV
         echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
 
-    - name: Check space usage  # 检查空间使用情况
-      if: (!cancelled())
-      run: df -hT
-
-    - name: Upload bin directory  # 上传 bin 目录
-      uses: actions/upload-artifact@main
-      if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
-      with:
-        name: OpenWrt_bin${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
-        path: openwrt/bin
-
-    - name: Organize files  # 整理文件
-      id: organize
-      if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
+    - name: Copy output to upload file
       run: |
-        cd openwrt/bin/targets/*/*
-        rm -rf packages
-        echo "FIRMWARE=$PWD" >> $GITHUB_ENV
-        echo "status=success" >> $GITHUB_OUTPUT
+        df -hT
+        mkdir upload
+        # cp openwrt/bin/targets/*/*/*.ubi upload/
+        cp openwrt/bin/targets/*/*/*.bin upload/
 
-    - name: Upload firmware directory  # 上传固件目录
-      uses: actions/upload-artifact@main
-      if: steps.organize.outputs.status == 'success' && !cancelled()
+    - name: Get Current Date
+      run: echo "CURRENT_DATE=$(date '+%Y%m%d')" >> $GITHUB_ENV
+
+    - name: Upload OpenWrt Firmware to Release
+      uses: ncipollo/release-action@main
       with:
-        name: OpenWrt_firmware${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
-        path: ${{ env.FIRMWARE }}
+        tag: AX3000T_${{ env.CURRENT_DATE }}
+        artifacts: upload/*
+        allowUpdates: true
+        token: ${{ secrets.GITHUB_TOKEN }}
+        body: |
+          Hanwckf's ImmortalWrt Firmware For Xiaomi AX3000T Router
 
-    - name: Generate release tag  # 生成发布标签
-      id: tag
-      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+    - name: Clean Compile
+      id: clean-compile
       run: |
-        echo "release_tag=$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
-        touch release.txt
-        [ $UPLOAD_COWTRANSFER = true ] && echo "🔗 [Cowtransfer](${{ steps.cowtransfer.outputs.url }})" >> release.txt
-        [ $UPLOAD_WETRANSFER = true ] && echo "🔗 [WeTransfer](${{ steps.wetransfer.outputs.url }})" >> release.txt
-        echo "status=success" >> $GITHUB_OUTPUT
+        cd openwrt
+        make clean
+
+    - name: Cache Compile
+      id: cache-compile
+      uses: actions/cache/save@v4
+      if: steps.compile.outputs.status == 'success' && !cancelled()
+      with:
+        path: openwrt
+        key: ${{ runner.os }}-openwrt-${{ hashFiles('openwrt/feeds.conf.default') }}
+
+    
+    # - name: Check space usage  # 检查空间使用情况
+    #   if: (!cancelled())
+    #   run: df -hT
+
+    # - name: Upload bin directory  # 上传 bin 目录
+    #   uses: actions/upload-artifact@main
+    #   if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
+    #   with:
+    #     name: OpenWrt_bin${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
+    #     path: openwrt/bin
+
+    # - name: Organize files  # 整理文件
+    #   id: organize
+    #   if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
+    #   run: |
+    #     cd openwrt/bin/targets/*/*
+    #     rm -rf packages
+    #     echo "FIRMWARE=$PWD" >> $GITHUB_ENV
+    #     echo "status=success" >> $GITHUB_OUTPUT
+
+    # - name: Upload firmware directory  # 上传固件目录
+    #   uses: actions/upload-artifact@main
+    #   if: steps.organize.outputs.status == 'success' && !cancelled()
+    #   with:
+    #     name: OpenWrt_firmware${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
+    #     path: ${{ env.FIRMWARE }}
+
+    # - name: Generate release tag  # 生成发布标签
+    #   id: tag
+    #   if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+    #   run: |
+    #     echo "release_tag=$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
+    #     touch release.txt
+    #     [ $UPLOAD_COWTRANSFER = true ] && echo "🔗 [Cowtransfer](${{ steps.cowtransfer.outputs.url }})" >> release.txt
+    #     [ $UPLOAD_WETRANSFER = true ] && echo "🔗 [WeTransfer](${{ steps.wetransfer.outputs.url }})" >> release.txt
+    #     echo "status=success" >> $GITHUB_OUTPUT
+    
 
     - name: Delete workflow runs  # 删除工作流运行
       uses: GitRML/delete-workflow-runs@main
