@@ -132,11 +132,11 @@ jobs:
     - name: Install feeds  # 安装 feeds
       run: cd openwrt && ./scripts/feeds install -a
 
-    # - name: Install lucky
-    #   run: |
-    #     cd openwrt
-    #     rm -rf package/ddns-go
-    #     git clone https://github.com/sirpdboy/luci-app-ddns-go.git package/ddns-go
+    - name: Install lucky
+      run: |
+        cd openwrt
+        rm -rf package/lucky
+        git clone https://github.com/gdy666/luci-app-lucky.git package/lucky
 
     # - name: Install argon
     #   run: |
@@ -186,10 +186,10 @@ jobs:
         # cp openwrt/bin/targets/*/*/*.ubi upload/
         cp openwrt/bin/targets/*/*/*.bin upload/
 
-    - name: Get Current Date
+    - name: Get current date
       run: echo "CURRENT_DATE=$(date '+%Y%m%d')" >> $GITHUB_ENV
 
-    - name: Upload OpenWrt Firmware to Release
+    - name: Upload openWrt firmware to release
       uses: ncipollo/release-action@main
       with:
         tag: AX3000T_${{ env.CURRENT_DATE }}
@@ -199,13 +199,13 @@ jobs:
         body: |
           Hanwckf's ImmortalWrt Firmware For Xiaomi AX3000T Router
 
-    - name: Clean Compile
+    - name: Clean compile
       id: clean-compile
       run: |
         cd openwrt
         make clean
 
-    - name: Cache Compile
+    - name: Cache compile
       id: cache-compile
       uses: actions/cache/save@v4
       if: steps.compile.outputs.status == 'success' && !cancelled()
@@ -250,7 +250,7 @@ jobs:
     #     [ $UPLOAD_COWTRANSFER = true ] && echo "🔗 [Cowtransfer](${{ steps.cowtransfer.outputs.url }})" >> release.txt
     #     [ $UPLOAD_WETRANSFER = true ] && echo "🔗 [WeTransfer](${{ steps.wetransfer.outputs.url }})" >> release.txt
     #     echo "status=success" >> $GITHUB_OUTPUT
-    
+
 
     - name: Delete workflow runs  # 删除工作流运行
       uses: GitRML/delete-workflow-runs@main
