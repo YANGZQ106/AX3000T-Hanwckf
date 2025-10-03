@@ -116,7 +116,7 @@ jobs:
       uses: stupidloud/cachewrtbuild@main
       with:
         ccache: 'true'
-        mixkey: AX3000T-${{ env.REPO_BRANCH }}
+        mixkey: AX3000T-Hanwckf-${{ env.REPO_BRANCH }}
         prefix: ${{ github.workspace }}/openwrt
         
     - name: Update & Install feeds
