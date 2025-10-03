@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-22.04  # 运行环境为 Ubuntu 22.04
 
     steps:
-    - name: Check Server Performance  # 检查服务器性能
+    - name: Check server performance  # 检查服务器性能
       run: |
         echo "警告⚠"
         echo "分配的服务器性能有限，若选择的插件过多，务必注意CPU性能！"
@@ -53,7 +53,7 @@ jobs:
         df -hT
         echo "=============================================================================="
 
-    - name: "Optimize Disk Space"
+    - name: Optimize disk space
       uses: "hugoalh/disk-space-optimizer-ghaction@v0.8.1"
       with:
         operate_sudo: "True"
