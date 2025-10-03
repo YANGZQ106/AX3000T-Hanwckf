@@ -115,7 +115,7 @@ jobs:
 
         
 
-    - name: CP output to upload file
+    - name: Copy output to upload file
       run: |
         df -hT
         mkdir upload
